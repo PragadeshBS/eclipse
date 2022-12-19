@@ -3,7 +3,7 @@ const Status = ({ users, keyExchangeSuccess }) => {
     <>
       <h3>Status</h3>
       {users.length == 0 ? (
-        <p>Other client is online</p>
+        <p>Other client is offline</p>
       ) : users.length == 1 ? (
         <p>Other client is online with id: {users[0]}</p>
       ) : (
