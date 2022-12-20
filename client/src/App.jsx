@@ -10,50 +10,56 @@ import importSecretKey from "./util/importKey";
 
 import Message from "./models/Message";
 import Status from "./components/Status";
+import SendMessage from "./components/SendMessage";
+import Logs from "./components/Logs";
 
 const socket = io.connect("http://localhost:3000");
 
 function App() {
   // Messages States
   const [message, setMessage] = useState("");
-  // const [recepient, setRecepient] = useState("");
   const [messages, setMessages] = useState([]);
   const [secretKey, setSecretKey] = useState([]);
   const [users, setUsers] = useState([]);
+  const [logs, setLogs] = useState([]);
   const [keyExchangeSucess, setKeyExchangeSuccess] = useState(false);
 
   const sendMessage = async () => {
-    console.log("Encrypting message with the following private key");
+    if (message === "") return;
+    setLogs((logs) => [
+      "Encrypting message with the following private key",
+      ...logs,
+    ]);
     console.log(secretKey);
     let secret = await encrypt(message, secretKey);
-    console.log("sending...");
+    setLogs((logs) => ["sending...", ...logs]);
     socket.emit("send_data", secret);
-    console.log("sent message");
+    setLogs((logs) => ["message sent", ...logs]);
+    setMessage("");
     setMessages((messages) => [...messages, new Message(message, true)]);
   };
 
   const onMessageType = (e) => {
     setMessage(e.target.value);
   };
-  // const onRecepientType = (e) => {
-  //   setRecepient(e.target.value);
-  // };
 
   const sendPublicKey = async () => {
     const keyPair = await genKeys();
     const publicKeyToExport = await exportCryptoKey(keyPair.publicKey);
     socket.emit("send_public_key", publicKeyToExport);
-    console.log("sent public key");
+    setLogs((logs) => ["sent public key", ...logs]);
     socket.on("receive_public_key", async (receivedPublicKey) => {
-      console.log("received public key from other client");
+      setLogs((logs) => ["received public key from other client", ...logs]);
       setKeyExchangeSuccess(true);
       const k = await importSecretKey(receivedPublicKey);
       const sk = await deriveSecretKey(keyPair.privateKey, k);
       setSecretKey(sk);
       socket.on("receive_data", async (data) => {
         // console.log("params", data.ciphertext, data.iv, sk);
-        console.log("Received a message, decrypting...");
+        setLogs((logs) => ["Received a message, decrypting...", ...logs]);
         const decryptedMessage = await decrypt(data.ciphertext, data.iv, sk);
+        console.log("decrypted message was " + decryptedMessage);
+        console.log(decryptedMessage.length);
         if (decryptedMessage !== "")
           setMessages((messages) => [
             ...messages,
@@ -65,24 +71,25 @@ function App() {
 
   useEffect(() => {
     socket.on("receive_existing_clients", (data) => {
-      console.log("Got existing clients: " + data);
+      setLogs((logs) => ["Got existing clients: ", ...logs]);
+      console.log("existing clients: " + data);
       setUsers(() => data);
     });
     socket.emit("notify");
     socket.on("requesting_public_key", async () => {
-      console.log("server requesting for public key");
+      setLogs((logs) => ["server requesting for public key", ...logs]);
       await sendPublicKey();
     });
-    socket.on("receive_message", (data) => {
-      console.log("Received a message");
-      setMessage((message) => [data.message, ...message]);
-    });
+    // socket.on("receive_message", (data) => {
+    //   setLogs((logs) => ["Received a message", ...logs]);
+    //   setMessage((message) => [data.message, ...message]);
+    // });
     socket.on("new_user", (userId) => {
-      console.log(userId + " joined");
+      setLogs((logs) => [userId + " joined", ...logs]);
       setUsers((users) => [userId, ...users]);
     });
     socket.on("user_left", (userId) => {
-      console.log(userId + "left");
+      setLogs((logs) => [userId + " left", ...logs]);
       setKeyExchangeSuccess(false);
       setUsers((users) => users.filter((user) => user !== userId));
     });
@@ -91,29 +98,15 @@ function App() {
 
   return (
     <div>
-      <div className="display-6">Encrypted Chat</div>
+      <div className="display-6">Encrypted Chat with sockets</div>
       <Messages messages={messages} />
-      Enter a message:{" "}
-      <div className="row align-items-center">
-        <div className="col-10">
-          <input
-            className="form-control"
-            value={message}
-            onChange={onMessageType}
-          />
-        </div>
-        <div className="col-2">
-          <button className="btn my-3 btn-dark" onClick={sendMessage}>
-            {/* to: <input value={recepient} onChange={onRecepientType} /> */}
-            Send
-          </button>
-        </div>
-      </div>
+      <SendMessage
+        message={message}
+        onMessageType={onMessageType}
+        sendMessage={sendMessage}
+      />
       <Status users={users} keyExchangeSuccess={keyExchangeSucess} />
-      {/* {users &&
-        users.map((user, index) => {
-          return <div key={index}>{user}</div>;
-        })} */}
+      <Logs logs={logs} />
     </div>
   );
 }

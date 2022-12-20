@@ -42,6 +42,7 @@ io.on("connection", (socket) => {
   });
 
   socket.on("send_data", (secret) => {
+    console.log("received a message, forwarding");
     socket.broadcast.emit("receive_data", secret);
   });
 
