@@ -12,7 +12,7 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:5173",
+    origin: true,
     methods: ["GET", "POST"],
   },
 });
@@ -24,10 +24,6 @@ io.on("connection", (socket) => {
   console.log("Clients " + clients);
 
   socket.broadcast.emit("new_user", socket.id);
-
-  // socket.on("send_message", (data) => {
-  //   socket.broadcast.emit("receive_message", data);
-  // });
 
   socket.on("notify", () => {
     socket.emit("receive_existing_clients", clients);
@@ -55,7 +51,6 @@ io.on("connection", (socket) => {
   });
 
   socket.on("upload", (fileData, callback) => {
-    // save the content to the disk, for example
     writeFile(
       path.resolve("D:\\Temp\\transferredFiles", fileData["name"]),
       fileData["file"],
