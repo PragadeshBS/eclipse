@@ -12,6 +12,7 @@ import Message from "./models/Message";
 import Status from "./components/Status";
 import SendMessage from "./components/SendMessage";
 import Logs from "./components/Logs";
+import FileUpload from "./components/FileUpload";
 
 const socket = io.connect("http://localhost:3000");
 
@@ -22,6 +23,7 @@ function App() {
   const [secretKey, setSecretKey] = useState([]);
   const [users, setUsers] = useState([]);
   const [logs, setLogs] = useState([]);
+  const [fileUploadSuccess, setFileUploadSuccess] = useState(false);
   const [keyExchangeSucess, setKeyExchangeSuccess] = useState(false);
 
   const sendMessage = async () => {
@@ -96,17 +98,33 @@ function App() {
     return () => socket.emit("disconnect");
   }, []);
 
+  const upload = (event) => {
+    setFileUploadSuccess(false);
+    let files = event.target.files;
+    socket.emit("upload", { name: files[0].name, file: files[0] }, (status) => {
+      if (status.message == "success") setFileUploadSuccess(true);
+    });
+  };
+
   return (
-    <div>
-      <div className="display-6">Encrypted Chat with sockets</div>
-      <Messages messages={messages} />
-      <SendMessage
-        message={message}
-        onMessageType={onMessageType}
-        sendMessage={sendMessage}
-      />
-      <Status users={users} keyExchangeSuccess={keyExchangeSucess} />
-      <Logs logs={logs} />
+    <div className="row">
+      <div className="col-8">
+        <div className="display-6">Encrypted Chat & FTP with sockets</div>
+        <Messages messages={messages} />
+        <SendMessage
+          message={message}
+          onMessageType={onMessageType}
+          sendMessage={sendMessage}
+        />
+        <Status users={users} keyExchangeSuccess={keyExchangeSucess} />
+        <Logs logs={logs} />
+      </div>
+      <div className="col-4">
+        <FileUpload
+          fileUploadSuccess={fileUploadSuccess}
+          onFileUpload={upload}
+        />
+      </div>
     </div>
   );
 }

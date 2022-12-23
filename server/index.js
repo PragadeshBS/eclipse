@@ -1,7 +1,9 @@
+const { writeFile } = require("fs");
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
 const cors = require("cors");
+const path = require("path");
 
 const app = express();
 app.use(cors());
@@ -50,6 +52,18 @@ io.on("connection", (socket) => {
     console.log(socket.id + " left");
     socket.broadcast.emit("user_left", socket.id);
     clients = clients.filter((clientId) => clientId !== socket.id);
+  });
+
+  socket.on("upload", (fileData, callback) => {
+    // save the content to the disk, for example
+    writeFile(
+      path.resolve("D:\\Temp\\transferredFiles", fileData["name"]),
+      fileData["file"],
+      (err) => {
+        console.log(err);
+        callback({ message: err ? "failure" : "success" });
+      }
+    );
   });
 });
 
