@@ -1,9 +1,7 @@
-const { writeFile } = require("fs");
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
 const cors = require("cors");
-const path = require("path");
 
 const app = express();
 app.use(cors());
@@ -50,20 +48,17 @@ io.on("connection", (socket) => {
     clients = clients.filter((clientId) => clientId !== socket.id);
   });
 
-  socket.on("upload", (fileData, callback) => {
-    writeFile(
-      path.resolve("D:\\Temp\\transferredFiles", fileData["name"]),
-      fileData["file"],
-      (err) => {
-        console.log(err);
-        callback({ message: err ? "failure" : "success" });
-      }
-    );
+  socket.on("upload", (fileData) => {
+    socket.broadcast.emit("download", {
+      fileName: fileData["name"],
+      file: fileData["file"],
+      fileType: fileData["type"],
+    });
   });
 });
 
 io.on("disconnect", () => console.log("dis"));
 
 server.listen(3000, () => {
-  console.log("SERVER IS RUNNING");
+  console.log("SERVER listening on port 3000");
 });

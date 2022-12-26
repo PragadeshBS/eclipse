@@ -14,7 +14,10 @@ import SendMessage from "./components/SendMessage";
 import Logs from "./components/Logs";
 import FileUpload from "./components/FileUpload";
 
-const socket = io.connect("http://localhost:3000");
+const server =
+  window.location.protocol + "//" + window.location.hostname + ":3000";
+const socket = io.connect(server);
+// const socket = io.connect("https://eclipse-backend.vercel.app:3000");
 
 function App() {
   // Messages States
@@ -95,15 +98,23 @@ function App() {
       setKeyExchangeSuccess(false);
       setUsers((users) => users.filter((user) => user !== userId));
     });
+    socket.on("download", (data) => {
+      var blob = new Blob([data["file"]], { type: data["fileType"] });
+      var objectUrl = URL.createObjectURL(blob);
+      var anchor = document.createElement("a");
+      anchor.download = data["fileName"];
+      anchor.href = objectUrl;
+      anchor.click();
+      setLogs((logs) => ["File downloaded", ...logs]);
+    });
     return () => socket.emit("disconnect");
   }, []);
 
   const upload = (event) => {
     setFileUploadSuccess(false);
-    let files = event.target.files;
-    socket.emit("upload", { name: files[0].name, file: files[0] }, (status) => {
-      if (status.message == "success") setFileUploadSuccess(true);
-    });
+    let file = event.target.files[0];
+    socket.emit("upload", { name: file.name, file, type: file.type });
+    setLogs((logs) => ["File uploaded", ...logs]);
   };
 
   return (
