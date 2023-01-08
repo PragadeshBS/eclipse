@@ -14,9 +14,24 @@ import SendMessage from "./components/SendMessage";
 import Logs from "./components/Logs";
 import FileUpload from "./components/FileUpload";
 
-const server =
-  window.location.protocol + "//" + window.location.hostname + ":3000";
-const socket = io.connect(server);
+// const server =
+// window.location.protocol + "//" + window.location.hostname + ":3000";
+const server = prompt("Enter server address").trim();
+// const server = "https://06f9-183-82-27-112.ngrok.io";
+const localServer = "http://localhost:3000";
+
+// const socket = io.connect(server === "" ? localServer : server);
+const socket = io(server === "" ? localServer : server, {
+  extraHeaders: {
+    "ngrok-skip-browser-warning": "1234",
+  },
+});
+if (server === "") {
+  console.log("connected to local server");
+} else {
+  console.log("connected to remote server");
+}
+console.log(socket);
 // const socket = io.connect("https://eclipse-backend.vercel.app:3000");
 
 function App() {

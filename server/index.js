@@ -1,19 +1,26 @@
 const express = require("express");
 const http = require("http");
-const { Server } = require("socket.io");
-const cors = require("cors");
+const { writeFile } = require("fs");
+const path = require("path");
 
 const app = express();
-app.use(cors());
+// app.use(cors());
 
 const server = http.createServer(app);
-
-const io = new Server(server, {
+const options = {
   cors: {
-    origin: true,
+    origin: "*",
     methods: ["GET", "POST"],
   },
-});
+};
+const io = require("socket.io")(server, options);
+
+// const io = new Server(server, {
+//   cors: {
+//     origin: true,
+//     methods: ["GET", "POST"],
+//   },
+// });
 
 let clients = [];
 
@@ -49,11 +56,13 @@ io.on("connection", (socket) => {
   });
 
   socket.on("upload", (fileData) => {
-    socket.broadcast.emit("download", {
-      fileName: fileData["name"],
-      file: fileData["file"],
-      fileType: fileData["type"],
-    });
+    writeFile(
+      path.resolve("D:\\Temp\\transferredFiles", fileData["name"]),
+      fileData["file"],
+      (err) => {
+        console.log(err);
+      }
+    );
   });
 });
 
